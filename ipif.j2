@@ -1,0 +1,5 @@
+{% for host in vars['play_hosts'] %}
+{%  for interface in interfaces %}
+"{{host}}","{{interface.name}}","{{interface.vsys}}","{{interface.fwd}}","{{interface.tag}}","{{interface.ip}}"
+{% endfor %}
+{% endfor %}

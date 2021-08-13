@@ -1,0 +1,39 @@
+---
+- hosts: all
+  connection: local
+  gather_facts: true
+
+  vars_prompt:
+    - name: username
+      prompt: "username"
+      private: no
+    - name: password
+      prompt: "password"
+      private: yes
+
+  vars:
+    provider:
+      ip_address: '{{ ip }}'
+      username: '{{ username }}'
+      password: '{{ password }}'
+
+  tasks:
+    - name: show sessions
+      paloaltonetworks.panos.panos_op:
+        provider: '{{ provider }}'
+        cmd_is_xml: true
+        cmd: <show><interface>all</interface></show>
+      register: result
+
+    - name: debug 
+      ansible.builtin.debug:
+        msg: '{{ result }}'
+
+
+    - name: template out interfaces
+      template:
+        src: ipif.j2
+        dest: output/interface_report.csv
+        mode: 0644
+      vars:
+        interfaces: '{{ (result.stdout | from_json).response.result.ifnet.entry }}'
