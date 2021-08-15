@@ -18,17 +18,21 @@
       password: '{{ password }}'
 
   tasks:
-    - name: show sessions
+    - name: get interface info
       paloaltonetworks.panos.panos_op:
         provider: '{{ provider }}'
         cmd_is_xml: true
         cmd: <show><interface>all</interface></show>
       register: result
 
-    - name: debug 
-      ansible.builtin.debug:
-        msg: '{{ result }}'
+    - name: ansible native list of dictionaries merge
+      ansible.builtin.set_fact:
+        hwifnet: "{{ hwifnet | default([]) + [ (result.stdout | from_json).response.result.ifnet.entry | selectattr('name','equalto', item) | first | combine((result.stdout | from_json).response.result.hw.entry | selectattr('name','equalto', item) | first)] }}"
+      loop: "{{ (result.stdout | from_json).response.result.ifnet.entry | map(attribute='name') | list }}"
 
+    - name: debug
+      ansible.builtin.debug:
+        var: hwifnet
 
     - name: template out interfaces
       template:
@@ -36,4 +40,4 @@
         dest: output/interface_report.csv
         mode: 0644
       vars:
-        interfaces: '{{ (result.stdout | from_json).response.result.ifnet.entry }}'
+        interfaces: '{{ hwifnet }} '
